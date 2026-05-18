@@ -36,10 +36,10 @@ def receive_data():
         cursor = db.cursor()
 
         query = """
-        INSERT INTO weather_data (temperature, humidity, location, created_at)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO weather_data (temperature, humidity, location), created_at)
+        VALUES (%s, %s, %s)#, %s)
         """
-        cursor.execute(query, (temperature, humidity, location, timestamp))
+        cursor.execute(query, (temperature, humidity, location))#, timestamp))
 
         db.commit()
         cursor.close()
@@ -74,30 +74,30 @@ def home():
     return "Weather API is running!"
 
 
-# def init_db():
-#     try:
-#         conn = get_db_connection()
-#         cursor = conn.cursor()
+def init_db():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-#         cursor.execute("""
-#         CREATE TABLE IF NOT EXISTS weather_data (
-#             id INT AUTO_INCREMENT PRIMARY KEY,
-#             temperature FLOAT,
-#             humidity FLOAT,
-#             location INT,
-#             timestamp TIMESTAMP,
-#             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-#         )
-#         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS weather_data (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            temperature FLOAT,
+            humidity FLOAT,
+            location INT,
+            #timestamp TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
 
-#         conn.commit()
-#         cursor.close()
-#         conn.close()
+        conn.commit()
+        cursor.close()
+        conn.close()
 
-#         print("✅ Table created successfully")
+        print("Table created successfully")
 
-#     except Exception as e:
-#         print("❌ Error creating table:", e)
+    except Exception as e:
+        print("Error creating table:", e)
 
 
 if __name__ == "__main__":
