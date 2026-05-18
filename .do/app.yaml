@@ -1,8 +1,8 @@
-name: sample-python
+name: soiltest
 services:
 - environment_slug: python
   github:
     branch: main
     deploy_on_push: true
     repo: johaniusa124/soiltest
-  name: sample-python
+  name: soiltest
