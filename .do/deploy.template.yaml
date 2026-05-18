@@ -1,8 +1,8 @@
 spec:
-  name: sample-python
+  name: soiltest1
   services:
   - environment_slug: python
     git:
-      branch: main
-      repo_clone_url: https://github.com/digitalocean/sample-python.git
-    name: sample-python
+      branch: t1
+      repo_clone_url: https://github.com/johaniusa124/soiltest
+    name: soiltest1
