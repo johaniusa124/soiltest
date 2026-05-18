@@ -36,8 +36,8 @@ def receive_data():
         cursor = db.cursor()
 
         query = """
-        INSERT INTO weather_data (temperature, humidity, location)#, created_at)
-        VALUES (%s, %s, %s)#, %s)
+        INSERT INTO weather_data (temperature, humidity, location, created_at)
+        VALUES (%s, %s, %s, %s)
         """
         cursor.execute(query, (temperature, humidity, location))#, timestamp))
 
