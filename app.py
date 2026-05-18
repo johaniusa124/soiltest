@@ -73,7 +73,7 @@ def get_data():
 def home():
     return "Weather API is running!"
 
-
+@app.route('/initapp', methonds=['GET'])
 def init_db():
     try:
         conn = get_db_connection()
@@ -95,9 +95,11 @@ def init_db():
         conn.close()
 
         print("Table created successfully")
+        return(1)
 
     except Exception as e:
         print("Error creating table:", e)
+        return(0)
 
 
 if __name__ == "__main__":
