@@ -28,7 +28,7 @@ def receive_data():
     location = data.get("location")
     #timestamp = data.get("timestamp")
 
-    if temperature is None or humidity is None or location is None or timestamp is None:
+    if temperature is None or humidity is None or location is None:# or timestamp is None:
         return jsonify({"error": "Missing required fields"}), 400
 
     try:
