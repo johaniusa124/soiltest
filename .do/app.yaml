@@ -4,5 +4,5 @@ services:
   github:
     branch: main
     deploy_on_push: true
-    repo: digitalocean/sample-python
+    repo: johaniusa124/soiltest
   name: sample-python
