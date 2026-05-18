@@ -68,7 +68,12 @@ def get_data():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+@app.route('/')
+def home():
+    return "Weather API is running!"
+
+
 # def init_db():
 #     try:
 #         conn = get_db_connection()
