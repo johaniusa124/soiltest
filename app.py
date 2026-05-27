@@ -6,8 +6,7 @@ import os
 
 app = Flask(__name__)
 
-# ---------------- DATABASE CONFIG ----------------
-
+#config
 DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 DB_HOST = os.environ.get("DB_HOST")
@@ -23,8 +22,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-# ---------------- DATABASE MODEL ----------------
-
 class WeatherData(db.Model):
     __tablename__ = "weather_data"
 
@@ -39,7 +36,6 @@ class WeatherData(db.Model):
         default=datetime.utcnow
     )
 
-# ---------------- ROUTES ----------------
 
 @app.route("/")
 def home():
@@ -109,8 +105,7 @@ def get_data():
 
         query = WeatherData.query
 
-        # ---------------- FILTER BY ID ----------------
-
+        #id
         start_id = request.args.get("start_id")
         end_id = request.args.get("end_id")
 
@@ -120,8 +115,8 @@ def get_data():
         if end_id:
             query = query.filter(WeatherData.id <= int(end_id))
 
-        # ---------------- FILTER BY DATE ----------------
-
+        
+        #date
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
 
@@ -147,8 +142,7 @@ def get_data():
             query = query.filter(
                 WeatherData.created_at <= end_date_obj
             )
-
-        # ---------------- EXECUTE QUERY ----------------
+            
 
         entries = query.all()
 
@@ -172,7 +166,6 @@ def get_data():
         return jsonify({"error": str(e)}), 500
 
 
-# ---------------- MAIN ----------------
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
