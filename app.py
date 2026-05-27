@@ -1,105 +1,108 @@
-from flask import Flask, request, jsonify
-import mysql.connector
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+import os
 
 app = Flask(__name__)
 
-# Connects to database (DomeData)
-def get_db_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME"),
-        port=int(os.getenv("DB_PORT")),
-        ssl_disabled=False 
+# ---------------- DATABASE CONFIG ----------------
+
+DB_USER = os.environ.get("DB_USER")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = os.environ.get("DB_PORT")
+DB_NAME = os.environ.get("DB_NAME")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+
+# ---------------- DATABASE MODEL ----------------
+
+class WeatherData(db.Model):
+    __tablename__ = "weather_data"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    temperature = db.Column(db.Float, nullable=False)
+    humidity = db.Column(db.Float, nullable=False)
+    location = db.Column(db.Integer, nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
     )
 
-# Post data
-@app.route('/data', methods=['POST'])
+# ---------------- ROUTES ----------------
+
+@app.route("/")
+def home():
+    return "Weather API is running!"
+
+# Create database tables
+@app.route("/init-db")
+def init_db():
+    db.create_all()
+    return "Database initialized!"
+
+# Receive sensor data
+@app.route("/data", methods=["POST"])
 def receive_data():
-    data = request.json
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No JSON received"}), 400
 
     temperature = data.get("temperature")
     humidity = data.get("humidity")
     location = data.get("location")
-    #timestamp = data.get("timestamp")
 
-    if temperature is None or humidity is None or location is None:# or timestamp is None:
+    if temperature is None or humidity is None or location is None:
         return jsonify({"error": "Missing required fields"}), 400
 
     try:
-        db = get_db_connection()
-        cursor = db.cursor()
 
-        query = """
-        INSERT INTO weather_data (temperature, humidity, location)#, created_at)
-        VALUES (%s, %s, %s)#, %s)
-        """
-        cursor.execute(query, (temperature, humidity, location))#, timestamp))
+        new_entry = WeatherData(
+            temperature=temperature,
+            humidity=humidity,
+            location=location
+        )
 
-        db.commit()
-        cursor.close()
-        db.close()
+        db.session.add(new_entry)
+        db.session.commit()
 
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Optional: get latest data
-@app.route('/data', methods=['GET'])
+# Get all data
+@app.route("/data", methods=["GET"])
 def get_data():
-    try:
-        db = get_db_connection()
-        cursor = db.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM weather_data ORDER BY created_at DESC LIMIT 10")
-        rows = cursor.fetchall()
+    entries = WeatherData.query.all()
 
-        cursor.close()
-        db.close()
+    output = []
 
-        return jsonify(rows), 200
+    for entry in entries:
+        output.append({
+            "id": entry.id,
+            "temperature": entry.temperature,
+            "humidity": entry.humidity,
+            "location": entry.location,
+            "created_at": entry.created_at
+        })
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(output)
 
-@app.route('/')
-def home():
-    return "Weather API is running!"
-
-def init_db():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS weather_data (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            temperature FLOAT,
-            humidity FLOAT,
-            location INT,
-            #timestamp TIMESTAMP,
-            #created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        print("Table created successfully")
-
-    except Exception as e:
-        print("Error creating table:", e)
-
+# ---------------- MAIN ----------------
 
 if __name__ == "__main__":
-    init_db()
-    app.run(host='0.0.0.0', port=8080)
-
+    app.run(host="0.0.0.0", port=8080)
