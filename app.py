@@ -83,24 +83,94 @@ def receive_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Get all data
+# # Get all data
+# @app.route("/data", methods=["GET"])
+# def get_data():
+
+#     entries = WeatherData.query.all()
+
+#     output = []
+
+#     for entry in entries:
+#         output.append({
+#             "id": entry.id,
+#             "temperature": entry.temperature,
+#             "humidity": entry.humidity,
+#             "location": entry.location,
+#             "created_at": entry.created_at
+#         })
+
+#     return jsonify(output)
+
 @app.route("/data", methods=["GET"])
 def get_data():
 
-    entries = WeatherData.query.all()
+    try:
 
-    output = []
+        query = WeatherData.query
 
-    for entry in entries:
-        output.append({
-            "id": entry.id,
-            "temperature": entry.temperature,
-            "humidity": entry.humidity,
-            "location": entry.location,
-            "created_at": entry.created_at
-        })
+        # ---------------- FILTER BY ID ----------------
 
-    return jsonify(output)
+        start_id = request.args.get("start_id")
+        end_id = request.args.get("end_id")
+
+        if start_id:
+            query = query.filter(WeatherData.id >= int(start_id))
+
+        if end_id:
+            query = query.filter(WeatherData.id <= int(end_id))
+
+        # ---------------- FILTER BY DATE ----------------
+
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+
+        # Format:
+        # 2026-05-18 12:00:00
+
+        if start_date:
+            start_date_obj = datetime.strptime(
+                start_date,
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            query = query.filter(
+                WeatherData.created_at >= start_date_obj
+            )
+
+        if end_date:
+            end_date_obj = datetime.strptime(
+                end_date,
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            query = query.filter(
+                WeatherData.created_at <= end_date_obj
+            )
+
+        # ---------------- EXECUTE QUERY ----------------
+
+        entries = query.all()
+
+        output = []
+
+        for entry in entries:
+
+            output.append({
+                "id": entry.id,
+                "temperature": entry.temperature,
+                "humidity": entry.humidity,
+                "location": entry.location,
+                "created_at": entry.created_at.strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            })
+
+        return jsonify(output)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # ---------------- MAIN ----------------
 
