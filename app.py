@@ -22,20 +22,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-class WeatherData(db.Model):
-    __tablename__ = "weather_data"
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    temperature = db.Column(db.Float, nullable=False)
-    humidity = db.Column(db.Float, nullable=False)
-    location = db.Column(db.Integer, nullable=False)
-
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow
-    )
-    
 class ParamsDB(db.Model):
     __tablename__ = "paramsDB"
 
@@ -44,12 +30,14 @@ class ParamsDB(db.Model):
     targetVPD = db.Column(db.Float, nullable=False)
     targetHumid = db.Column(db.Float, nullable=False)
     targetTemp = db.Column(db.Float, nullable=False)
-    getPostInt = db.Column(db.Float, nullable=False)
+    uploadInterval = db.Column(db.Integer, nullable=False)
 
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
     )
+
+    
 
 
 
@@ -195,11 +183,11 @@ def set_params():
         targetVPD = data.get("targetVPD")
         targetHumid = data.get("targetHumid")
         targetTemp = data.get("targetTemp")
-        getPostInt = data.get("getPostInt")
+        uploadInterval = data.get("uploadInterval")
         
 
 
-        if (targetVPD is None or targetHumid is None or targetTemp is None or getPostInt is None):
+        if (targetVPD is None or targetHumid is None or targetTemp is None or uploadInterval is None):
             return jsonify({"error": "Missing required fields"}), 400
 
         # Use latest row only
@@ -210,7 +198,7 @@ def set_params():
             params.targetVPD = targetVPD
             params.targetHumid = targetHumid
             params.targetTemp = targetTemp
-            params.getPostInt = getPostInt
+            params.uploadInterval = uploadInterval
 
         else:
 
@@ -218,7 +206,7 @@ def set_params():
                 targetVPD=targetVPD,
                 targetHumid=targetHumid,
                 targetTemp=targetTemp,
-                getPostInt=getPostInt
+                uploadInterval=uploadInterval
             )
 
             db.session.add(params)
@@ -249,7 +237,7 @@ def get_params():
             "targetVPD": params.targetVPD,
             "targetHumid": params.targetHumid,
             "targetTemp": params.targetTemp,
-            "getPostInt": params.getPostInt,
+            "uploadInterval": params.uploadInterval,
             "created_at": params.created_at.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
