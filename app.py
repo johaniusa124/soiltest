@@ -170,6 +170,7 @@ def get_data():
                 "temperature": entry.temperature,
                 "humidity": entry.humidity,
                 "location": entry.location,
+                "getPostInt" : entry.getPostInt,
                 "created_at": entry.created_at.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
@@ -194,6 +195,8 @@ def set_params():
         targetVPD = data.get("targetVPD")
         targetHumid = data.get("targetHumid")
         targetTemp = data.get("targetTemp")
+        getPostInt = data.get("getPostInt")
+        
 
 
         if (
@@ -211,6 +214,7 @@ def set_params():
             params.targetVPD = targetVPD
             params.targetHumid = targetHumid
             params.targetTemp = targetTemp
+            params.getPostInt = getPostInt
 
         else:
 
@@ -218,6 +222,7 @@ def set_params():
                 targetVPD=targetVPD,
                 targetHumid=targetHumid,
                 targetTemp=targetTemp,
+                getPostInt=getPostInt
             )
 
             db.session.add(params)
@@ -248,6 +253,7 @@ def get_params():
             "targetVPD": params.targetVPD,
             "targetHumid": params.targetHumid,
             "targetTemp": params.targetTemp,
+            "getPostInt": params.getPostInt,
             "created_at": params.created_at.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
