@@ -171,7 +171,6 @@ def get_data():
                 "temperature": entry.temperature,
                 "humidity": entry.humidity,
                 "location": entry.location,
-                "getPostInt" : entry.getPostInt,
                 "created_at": entry.created_at.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
