@@ -44,6 +44,7 @@ class ParamsDB(db.Model):
     targetVPD = db.Column(db.Float, nullable=False)
     targetHumid = db.Column(db.Float, nullable=False)
     targetTemp = db.Column(db.Float, nullable=False)
+    getPostInt = db.Column(db.Float, nullable=False)
 
     created_at = db.Column(
         db.DateTime,
