@@ -238,7 +238,7 @@ def set_params():
                 targetVPD=targetVPD,
                 targetHumid=targetHumid,
                 targetTemp=targetTemp,
-                uploadInterval=uploadInterval
+                uploadInterval=uploadInterval,
                 sensitivity=sensitivity
             )
 
