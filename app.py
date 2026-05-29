@@ -69,9 +69,9 @@ def rebuild_db():
 
     try:
 
-        ParamsDB.__table__.drop(db.engine)
-        #db.drop_all()
-        #db.create_all()
+        #ParamsDB.__table__.drop(db.engine)
+        db.drop_all()
+        db.create_all()
 
         return "Database rebuilt successfully!"
 
