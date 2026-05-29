@@ -252,6 +252,7 @@ def get_params():
 if __name__ == "__main__":
     with app.app_context():
         db.drop_all()
+        db.create_all()
         #ParamsDB.__table__.drop(db.engine)
         #ParamsDB.__table__.create(db.engine)
 
