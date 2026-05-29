@@ -35,6 +35,21 @@ class WeatherData(db.Model):
         db.DateTime,
         default=datetime.utcnow
     )
+    
+class ParamsDB(db.Model):
+    __tablename__ = "paramsDB"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    targetVPD = db.Column(db.Float, nullable=False)
+    targetHumid = db.Column(db.Float, nullable=False)
+    targetTemp = db.Column(db.Float, nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
 
 
 @app.route("/")
@@ -165,6 +180,83 @@ def get_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/params", methods=["POST"])
+def set_params():
+
+    try:
+
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "No JSON received"}), 400
+
+        targetVPD = data.get("targetVPD")
+        targetHumid = data.get("targetHumid")
+        targetTemp = data.get("targetTemp")
+
+
+        if (
+            targetVPD is None or
+            targetHumid is None or
+            targetTemp is None or
+        ):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Use latest row only
+        params = ParamsDB.query.first()
+
+        if params:
+
+            params.targetVPD = targetVPD
+            params.targetHumid = targetHumid
+            params.targetTemp = targetTemp
+
+        else:
+
+            params = ParamsDB(
+                targetVPD=targetVPD,
+                targetHumid=targetHumid,
+                targetTemp=targetTemp,
+            )
+
+            db.session.add(params)
+
+        db.session.commit()
+
+        return jsonify({"status": "success"}), 200
+
+    except Exception as e:
+
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/params", methods=["GET"])
+def get_params():
+
+    try:
+
+        params = ParamsDB.query.first()
+
+        if not params:
+
+            return jsonify({
+                "error": "No parameters found"
+            }), 404
+
+        return jsonify({
+
+            "targetVPD": params.targetVPD,
+            "targetHumid": params.targetHumid,
+            "targetTemp": params.targetTemp,
+            "created_at": params.created_at.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+        })
+
+    except Exception as e:
+
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
