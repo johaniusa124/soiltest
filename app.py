@@ -31,6 +31,7 @@ class ParamsDB(db.Model):
     targetHumid = db.Column(db.Float, nullable=False)
     targetTemp = db.Column(db.Float, nullable=False)
     uploadInterval = db.Column(db.Integer, nullable=False)
+    sensitivity = db.Column(db.Integer, nullable=False)
 
     created_at = db.Column(
         db.DateTime,
@@ -213,6 +214,7 @@ def set_params():
         targetHumid = data.get("targetHumid")
         targetTemp = data.get("targetTemp")
         uploadInterval = data.get("uploadInterval")
+        sensitivity = data.get("sensitivity")
         
 
 
@@ -228,6 +230,7 @@ def set_params():
             params.targetHumid = targetHumid
             params.targetTemp = targetTemp
             params.uploadInterval = uploadInterval
+            params.sensitivity = sensitivity
 
         else:
 
@@ -236,6 +239,7 @@ def set_params():
                 targetHumid=targetHumid,
                 targetTemp=targetTemp,
                 uploadInterval=uploadInterval
+                sensitivity=sensitivity
             )
 
             db.session.add(params)
@@ -267,6 +271,7 @@ def get_params():
             "targetHumid": params.targetHumid,
             "targetTemp": params.targetTemp,
             "uploadInterval": params.uploadInterval,
+            "sensitivity": params.sensitivity,
             "created_at": params.created_at.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
