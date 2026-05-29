@@ -200,12 +200,7 @@ def set_params():
         
 
 
-        if (
-            targetVPD is None or
-            targetHumid is None or
-            targetTemp is None or
-            getPostInt is None
-        ):
+        if (targetVPD is None or targetHumid is None or targetTemp is None or getPostInt is None):
             return jsonify({"error": "Missing required fields"}), 400
 
         # Use latest row only
