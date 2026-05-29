@@ -38,6 +38,19 @@ class ParamsDB(db.Model):
     )
 
     
+class WeatherData(db.Model):
+    __tablename__ = "weather_data"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    temperature = db.Column(db.Float, nullable=False)
+    humidity = db.Column(db.Float, nullable=False)
+    location = db.Column(db.Integer, nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
 
 
 
