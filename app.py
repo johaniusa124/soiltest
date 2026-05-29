@@ -251,7 +251,6 @@ def get_params():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
-    ```python
-with app.app_context():
-    ParamsDB.__table__.drop(db.engine)
-    #ParamsDB.__table__.create(db.engine)
+    with app.app_context():
+        ParamsDB.__table__.drop(db.engine)
+        #ParamsDB.__table__.create(db.engine)
