@@ -69,7 +69,11 @@ def calculate_vpd(temp_c, rh):
 
     return round(svp - avp, 3)
 
+def calculate_leaf_vpd(temp_c, rh):
+    svp = 0.6108 * math.exp((17.27 * (temp_c-2)) / ((temp_c-2) + 237.3))
+    avp = svp * (rh / 100.0)
 
+    return round(svp - avp, 3)
 
 
 @app.route("/")
@@ -392,6 +396,7 @@ def graph():
     temperatures = []
     humidities = []
     vpd_values = []
+    leaf_vpd_values = []
 
     for entry in entries:
 
@@ -414,7 +419,11 @@ def graph():
         )
 
         vpd_values.append(
-            calculate_vpd(entry.temperature,entry.humidity)
+            calculate_vpd(entry.temperature, entry.humidity)
+        )
+
+        leaf_vpd_values.append(
+            calculate_leaf_vpd(entry.temperature, entry.humidity)
         )
 
     local_start = (
@@ -563,6 +572,9 @@ const humidities =
 const vpdValues =
     {{ vpd_values | tojson }};
 
+const leafVpdValues =
+    {{ leaf_vpd_values | tojson }};
+
 new Chart(
 
     document.getElementById(
@@ -669,6 +681,14 @@ new Chart(
 
                     borderWidth: 2
 
+                },
+                {
+                    label:
+                    'Leaf VPD (kPa)',
+
+                    data:
+                    leafVpdValues,
+                    borderWidth: 2
                 }
 
             ]
