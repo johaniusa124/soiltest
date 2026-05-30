@@ -686,7 +686,7 @@ new Chart(
                 },
                 {
                     label:
-                    'Leaf VPD (kPa)',
+                    'Leaf VPD (esimate) (kPa)',
 
                     data:
                     leafVpdValues,
