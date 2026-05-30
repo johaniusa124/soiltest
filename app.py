@@ -70,11 +70,13 @@ def calculate_vpd(temp_c, rh):
     return round(svp - avp, 3)
 
 def calculate_leaf_vpd(temp_c, rh):
-    svp = 0.6108 * math.exp((17.27 * (temp_c-2)) / ((temp_c-2) + 237.3))
-    avp = svp * (rh / 100.0)
 
-    return round(svp - avp, 3)
+    leaf_temp = temp_c - 2
+    leaf_svp = (0.6108 * math.exp((17.27 * leaf_temp) / (leaf_temp + 237.3)))
+    air_svp = (0.6108 * math.exp((17.27 * temp_c) / (temp_c + 237.3)))
+    air_avp = air_svp * (rh / 100.0)
 
+    return round(leaf_svp - air_avp,3)
 
 @app.route("/")
 def home():
