@@ -1,7 +1,7 @@
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__)
@@ -281,6 +281,179 @@ def get_params():
     except Exception as e:
 
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/graph")
+def graph():
+
+    # Get date parameters from URL
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+
+    # Default = last 24 hours
+    if not start_str or not end_str:
+
+        end_time = datetime.utcnow()
+        start_time = end_time - timedelta(hours=24)
+
+    else:
+
+        try:
+
+            start_time = datetime.strptime(
+                start_str,
+                "%Y-%m-%d"
+            )
+
+            end_time = datetime.strptime(
+                end_str,
+                "%Y-%m-%d"
+            )
+
+            # include entire end day
+            end_time += timedelta(days=1)
+
+        except Exception:
+
+            return "Invalid date format. Use YYYY-MM-DD", 400
+
+    entries = (
+        WeatherData.query
+        .filter(
+            WeatherData.created_at >= start_time,
+            WeatherData.created_at <= end_time
+        )
+        .order_by(WeatherData.created_at.asc())
+        .all()
+    )
+
+    timestamps = [
+        entry.created_at.strftime("%Y-%m-%d %H:%M")
+        for entry in entries
+    ]
+
+    temperatures = [
+        entry.temperature
+        for entry in entries
+    ]
+
+    humidities = [
+        entry.humidity
+        for entry in entries
+    ]
+
+    return render_template_string("""
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Weather Graph</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body {
+    font-family: Arial;
+    margin: 20px;
+}
+
+form {
+    margin-bottom: 20px;
+}
+
+canvas {
+    max-width: 1400px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Weather Data</h1>
+
+<form method="GET">
+
+    Start Date:
+
+    <input
+        type="date"
+        name="start"
+        value="{{ start_date }}"
+    >
+
+    End Date:
+
+    <input
+        type="date"
+        name="end"
+        value="{{ end_date }}"
+    >
+
+    <button type="submit">
+        Update Graph
+    </button>
+
+</form>
+
+<canvas id="weatherChart"></canvas>
+
+<script>
+
+const labels = {{ timestamps | tojson }};
+const temperatures = {{ temperatures | tojson }};
+const humidities = {{ humidities | tojson }};
+
+new Chart(
+    document.getElementById('weatherChart'),
+    {
+
+        type: 'line',
+
+        data: {
+
+            labels: labels,
+
+            datasets: [
+
+                {
+                    label: 'Temperature (°C)',
+                    data: temperatures,
+                    borderWidth: 2
+                },
+
+                {
+                    label: 'Humidity (%)',
+                    data: humidities,
+                    borderWidth: 2
+                }
+
+            ]
+
+        },
+
+        options: {
+            responsive: true
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>
+""",
+        timestamps=timestamps,
+        temperatures=temperatures,
+        humidities=humidities,
+        start_date=start_time.strftime("%Y-%m-%d"),
+        end_date=end_time.strftime("%Y-%m-%d")
+    )
+
 
 
 if __name__ == "__main__":
