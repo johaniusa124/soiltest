@@ -314,10 +314,21 @@ def graph():
 
     ]
 
-    timezone_name = request.args.get(
-        "timezone",
-        "America/Denver"
+    timezone_name = request.args.get("timezone","America/Denver")
+
+    selected_location = int(
+        request.args.get("location", 1)
     )
+
+    available_locations = [row[0]
+    for row in
+        db.session.query(WeatherData.location)
+
+    .distinct()
+
+    .order_by(WeatherData.location)
+
+    ]
 
     start_str = request.args.get("start")
     end_str = request.args.get("end")
@@ -355,20 +366,17 @@ def graph():
             ), 400
 
     entries = (
-
+    
         WeatherData.query
-
-        .filter(
-            WeatherData.created_at >= start_time,
-            WeatherData.created_at <= end_time
-        )
-
-        .order_by(
-            WeatherData.created_at.asc()
-        )
-
+    
+        .filter(WeatherData.location == selected_location)
+    
+        .filter(WeatherData.created_at >= start_time, WeatherData.created_at <= end_time)
+    
+        .order_by(WeatherData.created_at.asc())
+    
         .all()
-
+    
     )
 
     timestamps = []
@@ -457,7 +465,9 @@ canvas {
 
 <body>
 
-<h1>Weather Dashboard</h1>
+<h1>Grow Dome Data
+(Location {{ selected_location }})
+</h1>
 
 <form method="GET">
 
@@ -496,6 +506,27 @@ canvas {
 
         {% endfor %}
 
+    </select>
+
+    <label>Location:</label>
+
+    <select name="location">
+    
+        {% for loc in available_locations %}
+    
+        <option
+            value="{{ loc }}"
+            {% if loc == selected_location %}
+            selected
+            {% endif %}
+        >
+    
+            Location {{ loc }}
+    
+        </option>
+    
+        {% endfor %}
+    
     </select>
 
     <button type="submit">
@@ -656,6 +687,7 @@ new Chart(
 
 </html>
 
+
 """,
 
         timestamps=timestamps,
@@ -675,6 +707,10 @@ new Chart(
         ),
 
         timezones=TIMEZONES,
+
+        available_locations=available_locations,
+
+        selected_location=selected_location,
 
         current_timezone=timezone_name
 
