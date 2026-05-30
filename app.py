@@ -305,13 +305,11 @@ def get_params():
 def graph():
 
     TIMEZONES = [
-
         "America/Denver",
         "America/Chicago",
         "America/New_York",
         "America/Los_Angeles",
         "UTC"
-
     ]
 
     timezone_name = request.args.get("timezone","America/Denver")
@@ -398,25 +396,13 @@ def graph():
     for entry in entries:
 
         local_time = (
-
             entry.created_at
-
-            .replace(
-                tzinfo=ZoneInfo("UTC")
-            )
-
-            .astimezone(
-                ZoneInfo(timezone_name)
-            )
-
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(ZoneInfo(timezone_name))
         )
 
         timestamps.append(
-
-            local_time.strftime(
-                "%Y-%m-%d %H:%M"
-            )
-
+            local_time.strftime("%Y-%m-%d %H:%M")
         )
 
         temperatures.append(
@@ -428,13 +414,20 @@ def graph():
         )
 
         vpd_values.append(
-
-            calculate_vpd(
-                entry.temperature,
-                entry.humidity
-            )
-
+            calculate_vpd(entry.temperature,entry.humidity)
         )
+
+    local_start = (
+        start_time
+        .replace(tzinfo=ZoneInfo("UTC"))
+        .astimezone(local_tz)
+    )
+    
+    local_end = (
+        end_time
+        .replace(tzinfo=ZoneInfo("UTC"))
+        .astimezone(local_tz)
+    )
 
     return render_template_string("""
 
@@ -708,27 +701,10 @@ new Chart(
         humidities=humidities,
 
         vpd_values=vpd_values,
-
-        local_start = (
-            start_time
-            .replace(tzinfo=ZoneInfo("UTC"))
-            .astimezone(local_tz)
-        )
-        
-        local_end = (
-            end_time
-            .replace(tzinfo=ZoneInfo("UTC"))
-            .astimezone(local_tz)
-        )
-
                                   
-        start_date=start_time.strftime(
-            "%Y-%m-%dT%H:%M"
-        ),
-
-        end_date=end_time.strftime(
-            "%Y-%m-%dT%H:%M"
-        ),
+        start_date=local_start.strftime("%Y-%m-%dT%H:%M"),
+        
+        end_date=local_end.strftime("%Y-%m-%dT%H:%M"),
 
         timezones=TIMEZONES,
 
