@@ -347,16 +347,27 @@ def graph():
     else:
 
         try:
-
-            start_time = datetime.strptime(
-                start_str,
-                "%Y-%m-%dT%H:%M"
-            )
-
-            end_time = datetime.strptime(
-                end_str,
-                "%Y-%m-%dT%H:%M"
-            )
+            local_tz = ZoneInfo(timezone_name)
+            
+            start_time = datetime.strptime(start_str, "%Y-%m-%dT%H:%M")
+            
+            end_time = datetime.strptime(end_str, "%Y-%m-%dT%H:%M")
+            
+            # Attach selected timezone
+            
+            start_time = start_time.replace(tzinfo=local_tz)
+            
+            end_time = end_time.replace(tzinfo=local_tz)
+            
+            # Convert to UTC for querying database
+            
+            start_time = start_time.astimezone(
+                ZoneInfo("UTC")
+            ).replace(tzinfo=None)
+            
+            end_time = end_time.astimezone(
+                ZoneInfo("UTC")
+            ).replace(tzinfo=None)
 
         except Exception:
 
@@ -698,6 +709,19 @@ new Chart(
 
         vpd_values=vpd_values,
 
+        local_start = (
+            start_time
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(local_tz)
+        )
+        
+        local_end = (
+            end_time
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(local_tz)
+        )
+
+                                  
         start_date=start_time.strftime(
             "%Y-%m-%dT%H:%M"
         ),
