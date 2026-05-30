@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import os
+import math
 
 app = Flask(__name__)
 
@@ -22,6 +23,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+
+#classes
 class ParamsDB(db.Model):
     __tablename__ = "paramsDB"
 
@@ -52,6 +55,19 @@ class WeatherData(db.Model):
         db.DateTime,
         default=datetime.utcnow
     )
+
+
+
+
+
+#methods
+def calculate_vpd(temp_c, rh):
+
+    svp = 0.6108 * math.exp((17.27 * temp_c) / (temp_c + 237.3))
+    avp = svp * (rh / 100.0)
+
+    return round(svp - avp, 3)
+
 
 
 
@@ -283,18 +299,38 @@ def get_params():
         return jsonify({"error": str(e)}), 500
 
 
+
 @app.route("/graph")
 def graph():
 
-    # Get date parameters from URL
+    TIMEZONES = [
+
+        "America/Denver",
+        "America/Chicago",
+        "America/New_York",
+        "America/Los_Angeles",
+        "UTC"
+
+    ]
+
+    timezone_name = request.args.get(
+        "timezone",
+        "America/Denver"
+    )
+
     start_str = request.args.get("start")
     end_str = request.args.get("end")
 
     # Default = last 24 hours
+
     if not start_str or not end_str:
 
         end_time = datetime.utcnow()
-        start_time = end_time - timedelta(hours=24)
+
+        start_time = (
+            end_time -
+            timedelta(hours=24)
+        )
 
     else:
 
@@ -302,69 +338,116 @@ def graph():
 
             start_time = datetime.strptime(
                 start_str,
-                "%Y-%m-%d"
+                "%Y-%m-%dT%H:%M"
             )
 
             end_time = datetime.strptime(
                 end_str,
-                "%Y-%m-%d"
+                "%Y-%m-%dT%H:%M"
             )
-
-            # include entire end day
-            end_time += timedelta(days=1)
 
         except Exception:
 
-            return "Invalid date format. Use YYYY-MM-DD", 400
+            return (
+                "Invalid datetime format."
+                " Use datetime-local inputs."
+            ), 400
 
     entries = (
+
         WeatherData.query
+
         .filter(
             WeatherData.created_at >= start_time,
             WeatherData.created_at <= end_time
         )
-        .order_by(WeatherData.created_at.asc())
+
+        .order_by(
+            WeatherData.created_at.asc()
+        )
+
         .all()
+
     )
 
-    timestamps = [
-        entry.created_at.strftime("%Y-%m-%d %H:%M")
-        for entry in entries
-    ]
+    timestamps = []
+    temperatures = []
+    humidities = []
+    vpd_values = []
 
-    temperatures = [
-        entry.temperature
-        for entry in entries
-    ]
+    for entry in entries:
 
-    humidities = [
-        entry.humidity
-        for entry in entries
-    ]
+        local_time = (
+
+            entry.created_at
+
+            .replace(
+                tzinfo=ZoneInfo("UTC")
+            )
+
+            .astimezone(
+                ZoneInfo(timezone_name)
+            )
+
+        )
+
+        timestamps.append(
+
+            local_time.strftime(
+                "%Y-%m-%d %H:%M"
+            )
+
+        )
+
+        temperatures.append(
+            entry.temperature
+        )
+
+        humidities.append(
+            entry.humidity
+        )
+
+        vpd_values.append(
+
+            calculate_vpd(
+                entry.temperature,
+                entry.humidity
+            )
+
+        )
 
     return render_template_string("""
+
 <!DOCTYPE html>
+
 <html>
 
 <head>
 
-<title>Weather Graph</title>
+<title>Weather Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 body {
+
     font-family: Arial;
     margin: 20px;
+
 }
 
 form {
-    margin-bottom: 20px;
+
+    margin-bottom: 25px;
+
 }
 
 canvas {
+
     max-width: 1400px;
+    margin-bottom: 50px;
+
 }
 
 </style>
@@ -373,42 +456,83 @@ canvas {
 
 <body>
 
-<h1>Weather Data</h1>
+<h1>Weather Dashboard</h1>
 
 <form method="GET">
 
-    Start Date:
+    <label>Start:</label>
 
     <input
-        type="date"
+        type="datetime-local"
         name="start"
         value="{{ start_date }}"
     >
 
-    End Date:
+    <label>End:</label>
 
     <input
-        type="date"
+        type="datetime-local"
         name="end"
         value="{{ end_date }}"
     >
 
+    <label>Timezone:</label>
+
+    <select name="timezone">
+
+        {% for tz in timezones %}
+
+        <option
+            value="{{ tz }}"
+            {% if tz == current_timezone %}
+            selected
+            {% endif %}
+        >
+
+            {{ tz }}
+
+        </option>
+
+        {% endfor %}
+
+    </select>
+
     <button type="submit">
+
         Update Graph
+
     </button>
 
 </form>
 
+<h2>Temperature & Humidity</h2>
+
 <canvas id="weatherChart"></canvas>
+
+<h2>VPD</h2>
+
+<canvas id="vpdChart"></canvas>
 
 <script>
 
-const labels = {{ timestamps | tojson }};
-const temperatures = {{ temperatures | tojson }};
-const humidities = {{ humidities | tojson }};
+const labels =
+    {{ timestamps | tojson }};
+
+const temperatures =
+    {{ temperatures | tojson }};
+
+const humidities =
+    {{ humidities | tojson }};
+
+const vpdValues =
+    {{ vpd_values | tojson }};
 
 new Chart(
-    document.getElementById('weatherChart'),
+
+    document.getElementById(
+        'weatherChart'
+    ),
+
     {
 
         type: 'line',
@@ -420,15 +544,33 @@ new Chart(
             datasets: [
 
                 {
-                    label: 'Temperature (°C)',
-                    data: temperatures,
+
+                    label:
+                    'Temperature (°C)',
+
+                    data:
+                    temperatures,
+
+                    yAxisID:
+                    'tempAxis',
+
                     borderWidth: 2
+
                 },
 
                 {
-                    label: 'Humidity (%)',
-                    data: humidities,
+
+                    label:
+                    'Humidity (%)',
+
+                    data:
+                    humidities,
+
+                    yAxisID:
+                    'humidAxis',
+
                     borderWidth: 2
+
                 }
 
             ]
@@ -436,23 +578,108 @@ new Chart(
         },
 
         options: {
-            responsive: true
+
+            responsive: true,
+
+            scales: {
+
+                tempAxis: {
+
+                    type: 'linear',
+
+                    position: 'left'
+
+                },
+
+                humidAxis: {
+
+                    type: 'linear',
+
+                    position: 'right'
+
+                }
+
+            }
+
         }
 
     }
+
+);
+
+new Chart(
+
+    document.getElementById(
+        'vpdChart'
+    ),
+
+    {
+
+        type: 'line',
+
+        data: {
+
+            labels: labels,
+
+            datasets: [
+
+                {
+
+                    label:
+                    'VPD (kPa)',
+
+                    data:
+                    vpdValues,
+
+                    borderWidth: 2
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
 );
 
 </script>
 
 </body>
+
 </html>
+
 """,
+
         timestamps=timestamps,
+
         temperatures=temperatures,
+
         humidities=humidities,
-        start_date=start_time.strftime("%Y-%m-%d"),
-        end_date=end_time.strftime("%Y-%m-%d")
+
+        vpd_values=vpd_values,
+
+        start_date=start_time.strftime(
+            "%Y-%m-%dT%H:%M"
+        ),
+
+        end_date=end_time.strftime(
+            "%Y-%m-%dT%H:%M"
+        ),
+
+        timezones=TIMEZONES,
+
+        current_timezone=timezone_name
+
     )
+
+
 
 
 
