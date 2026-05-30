@@ -314,6 +314,8 @@ def graph():
 
     timezone_name = request.args.get("timezone","America/Denver")
 
+    local_tz = ZoneInfo(timezone_name)
+
     selected_location = int(
         request.args.get("location", 1)
     )
@@ -345,8 +347,6 @@ def graph():
     else:
 
         try:
-            local_tz = ZoneInfo(timezone_name)
-            
             start_time = datetime.strptime(start_str, "%Y-%m-%dT%H:%M")
             
             end_time = datetime.strptime(end_str, "%Y-%m-%dT%H:%M")
