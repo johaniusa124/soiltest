@@ -721,6 +721,8 @@ new Chart(
         humidities=humidities,
 
         vpd_values=vpd_values,
+
+        leaf_vpd_values=leaf_vpd_values,
                                   
         start_date=local_start.strftime("%Y-%m-%dT%H:%M"),
         
