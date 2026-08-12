@@ -134,6 +134,32 @@ def rebuild_db():
 
         return str(e), 500
 
+@app.route("/fix-weather-data")
+def fix_weather_data():
+
+    try:
+
+        with db.engine.connect() as connection:
+
+            # Add the two missing columns
+            connection.execute(
+                db.text("""
+                    ALTER TABLE weather_data
+                    ADD COLUMN `open` BOOLEAN NOT NULL DEFAULT FALSE,
+                    ADD COLUMN `mode` VARCHAR(20) NOT NULL DEFAULT 'auto'
+                """)
+            )
+
+            connection.commit()
+
+        return "weather_data fixed successfully! Added open and mode columns."
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 
 # Receive sensor data
 # @app.route("/data", methods=["POST"])
