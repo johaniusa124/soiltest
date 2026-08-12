@@ -386,105 +386,105 @@ def get_params():
 
         return jsonify({"error": str(e)}), 500
 
-@app.route("/params", methods=["POST"])
-def set_params():
+# @app.route("/params", methods=["POST"])
+# def set_params():
 
-    try:
+#     try:
 
-        data = request.get_json()
+#         data = request.get_json()
 
-        if not data:
+#         if not data:
 
-            return jsonify({
-                "error": "No JSON received"
-            }), 400
+#             return jsonify({
+#                 "error": "No JSON received"
+#             }), 400
 
-        targetVPD = data.get("targetVPD")
-        targetHumid = data.get("targetHumid")
-        targetTemp = data.get("targetTemp")
-        uploadInterval = data.get("uploadInterval")
-        sensitivity = data.get("sensitivity")
+#         targetVPD = data.get("targetVPD")
+#         targetHumid = data.get("targetHumid")
+#         targetTemp = data.get("targetTemp")
+#         uploadInterval = data.get("uploadInterval")
+#         sensitivity = data.get("sensitivity")
 
-        minTemp = data.get("minTemp")
-        maxTemp = data.get("maxTemp")
+#         minTemp = data.get("minTemp")
+#         maxTemp = data.get("maxTemp")
 
-        remoteMode = data.get("remoteMode")
+#         remoteMode = data.get("remoteMode")
 
-        if (
-            targetVPD is None or
-            targetHumid is None or
-            targetTemp is None or
-            uploadInterval is None or
-            sensitivity is None or
-            minTemp is None or
-            maxTemp is None or
-            remoteMode is None
-        ):
+#         if (
+#             targetVPD is None or
+#             targetHumid is None or
+#             targetTemp is None or
+#             uploadInterval is None or
+#             sensitivity is None or
+#             minTemp is None or
+#             maxTemp is None or
+#             remoteMode is None
+#         ):
 
-            return jsonify({
-                "error": "Missing required fields"
-            }), 400
+#             return jsonify({
+#                 "error": "Missing required fields"
+#             }), 400
 
-        if remoteMode not in [
-            "auto",
-            "open",
-            "closed"
-        ]:
+#         if remoteMode not in [
+#             "auto",
+#             "open",
+#             "closed"
+#         ]:
 
-            return jsonify({
-                "error":
-                "remoteMode must be auto, open, or closed"
-            }), 400
+#             return jsonify({
+#                 "error":
+#                 "remoteMode must be auto, open, or closed"
+#             }), 400
 
-        params = ParamsDB.query.first()
+#         params = ParamsDB.query.first()
 
-        if params:
+#         if params:
 
-            params.targetVPD = targetVPD
-            params.targetHumid = targetHumid
-            params.targetTemp = targetTemp
-            params.uploadInterval = uploadInterval
-            params.sensitivity = sensitivity
+#             params.targetVPD = targetVPD
+#             params.targetHumid = targetHumid
+#             params.targetTemp = targetTemp
+#             params.uploadInterval = uploadInterval
+#             params.sensitivity = sensitivity
 
-            params.minTemp = minTemp
-            params.maxTemp = maxTemp
+#             params.minTemp = minTemp
+#             params.maxTemp = maxTemp
 
-            params.remoteMode = remoteMode
+#             params.remoteMode = remoteMode
 
-        else:
+#         else:
 
-            params = ParamsDB(
+#             params = ParamsDB(
 
-                targetVPD=targetVPD,
-                targetHumid=targetHumid,
-                targetTemp=targetTemp,
+#                 targetVPD=targetVPD,
+#                 targetHumid=targetHumid,
+#                 targetTemp=targetTemp,
 
-                uploadInterval=uploadInterval,
+#                 uploadInterval=uploadInterval,
 
-                sensitivity=sensitivity,
+#                 sensitivity=sensitivity,
 
-                minTemp=minTemp,
-                maxTemp=maxTemp,
+#                 minTemp=minTemp,
+#                 maxTemp=maxTemp,
 
-                remoteMode=remoteMode
+#                 remoteMode=remoteMode
 
-            )
+#             )
 
-            db.session.add(params)
+#             db.session.add(params)
 
-        db.session.commit()
+#         db.session.commit()
 
-        return jsonify({
-            "status": "success"
-        }), 200
+#         return jsonify({
+#             "status": "success"
+#         }), 200
 
-    except Exception as e:
+#     except Exception as e:
 
-        db.session.rollback()
+#         db.session.rollback()
 
-        return jsonify({
-            "error": str(e)
-        }), 500
+#         return jsonify({
+#             "error": str(e)
+#         }), 500
 
 @app.route("/params", methods=["GET"])
 def params_page():
