@@ -1,5 +1,5 @@
 
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, redirect, request, jsonify, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -386,18 +386,130 @@ def get_params():
 
         return jsonify({"error": str(e)}), 500
 
+# @app.route("/params", methods=["POST"])
+# def set_params():
+
+#     try:
+
+#         data = request.get_json()
+
+#         if not data:
+
+#             return jsonify({
+#                 "error": "No JSON received"
+#             }), 400
+
+#         targetVPD = data.get("targetVPD")
+#         targetHumid = data.get("targetHumid")
+#         targetTemp = data.get("targetTemp")
+#         uploadInterval = data.get("uploadInterval")
+#         sensitivity = data.get("sensitivity")
+
+#         minTemp = data.get("minTemp")
+#         maxTemp = data.get("maxTemp")
+
+#         remoteMode = data.get("remoteMode")
+
+#         if (
+#             targetVPD is None or
+#             targetHumid is None or
+#             targetTemp is None or
+#             uploadInterval is None or
+#             sensitivity is None or
+#             minTemp is None or
+#             maxTemp is None or
+#             remoteMode is None
+#         ):
+
+#             return jsonify({
+#                 "error": "Missing required fields"
+#             }), 400
+
+#         if remoteMode not in [
+#             "auto",
+#             "open",
+#             "closed"
+#         ]:
+
+#             return jsonify({
+#                 "error":
+#                 "remoteMode must be auto, open, or closed"
+#             }), 400
+
+#         params = ParamsDB.query.first()
+
+#         if params:
+
+#             params.targetVPD = targetVPD
+#             params.targetHumid = targetHumid
+#             params.targetTemp = targetTemp
+#             params.uploadInterval = uploadInterval
+#             params.sensitivity = sensitivity
+
+#             params.minTemp = minTemp
+#             params.maxTemp = maxTemp
+
+#             params.remoteMode = remoteMode
+
+#         else:
+
+#             params = ParamsDB(
+
+#                 targetVPD=targetVPD,
+#                 targetHumid=targetHumid,
+#                 targetTemp=targetTemp,
+
+#                 uploadInterval=uploadInterval,
+
+#                 sensitivity=sensitivity,
+
+#                 minTemp=minTemp,
+#                 maxTemp=maxTemp,
+
+#                 remoteMode=remoteMode
+
+#             )
+
+#             db.session.add(params)
+
+#         db.session.commit()
+
+#         return jsonify({
+#             "status": "success"
+#         }), 200
+
+#     except Exception as e:
+
+#         db.session.rollback()
+
+#         return jsonify({
+#             "error": str(e)
+#         }), 500
+
 @app.route("/params", methods=["POST"])
 def set_params():
 
     try:
 
-        data = request.get_json()
+        # ------------------------------------------------
+        # Accept either JSON or normal HTML form data
+        # ------------------------------------------------
+
+        if request.is_json:
+            data = request.get_json()
+
+        else:
+            data = request.form.to_dict()
 
         if not data:
-
             return jsonify({
-                "error": "No JSON received"
+                "error": "No data received"
             }), 400
+
+
+        # ------------------------------------------------
+        # Get parameters
+        # ------------------------------------------------
 
         targetVPD = data.get("targetVPD")
         targetHumid = data.get("targetHumid")
@@ -409,6 +521,11 @@ def set_params():
         maxTemp = data.get("maxTemp")
 
         remoteMode = data.get("remoteMode")
+
+
+        # ------------------------------------------------
+        # Check required fields
+        # ------------------------------------------------
 
         if (
             targetVPD is None or
@@ -425,6 +542,11 @@ def set_params():
                 "error": "Missing required fields"
             }), 400
 
+
+        # ------------------------------------------------
+        # Validate remote mode
+        # ------------------------------------------------
+
         if remoteMode not in [
             "auto",
             "open",
@@ -436,20 +558,53 @@ def set_params():
                 "remoteMode must be auto, open, or closed"
             }), 400
 
+
+        # ------------------------------------------------
+        # Convert values to appropriate types
+        # ------------------------------------------------
+
+        targetVPD = float(targetVPD)
+        targetHumid = float(targetHumid)
+        targetTemp = float(targetTemp)
+
+        uploadInterval = int(uploadInterval)
+
+        sensitivity = float(sensitivity)
+
+        minTemp = float(minTemp)
+        maxTemp = float(maxTemp)
+
+
+        # ------------------------------------------------
+        # Get existing parameter row
+        # ------------------------------------------------
+
         params = ParamsDB.query.first()
+
+
+        # ------------------------------------------------
+        # Update existing row
+        # ------------------------------------------------
 
         if params:
 
             params.targetVPD = targetVPD
             params.targetHumid = targetHumid
             params.targetTemp = targetTemp
+
             params.uploadInterval = uploadInterval
+
             params.sensitivity = sensitivity
 
             params.minTemp = minTemp
             params.maxTemp = maxTemp
 
             params.remoteMode = remoteMode
+
+
+        # ------------------------------------------------
+        # Create parameter row if one doesn't exist
+        # ------------------------------------------------
 
         else:
 
@@ -472,11 +627,33 @@ def set_params():
 
             db.session.add(params)
 
+
+        # ------------------------------------------------
+        # Save to database
+        # ------------------------------------------------
+
         db.session.commit()
+
+
+        # ------------------------------------------------
+        # If this was the webpage form,
+        # redirect back to /params
+        # ------------------------------------------------
+
+        if not request.is_json:
+
+            return redirect("/params")
+
+
+        # ------------------------------------------------
+        # If this was JSON (ESP32/Postman),
+        # return JSON response
+        # ------------------------------------------------
 
         return jsonify({
             "status": "success"
         }), 200
+
 
     except Exception as e:
 
