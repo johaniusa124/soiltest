@@ -96,43 +96,43 @@ def init_db():
     db.create_all()
     return "Database initialized!"
 
-@app.route("/reset-params-db")
-def reset_params_db():
+# @app.route("/reset-params-db")
+# def reset_params_db():
 
-    try:
+#     try:
 
-        ParamsDB.__table__.drop(
-            db.engine,
-            checkfirst=True
-        )
+#         ParamsDB.__table__.drop(
+#             db.engine,
+#             checkfirst=True
+#         )
 
-        ParamsDB.__table__.create(
-            db.engine,
-            checkfirst=True
-        )
+#         ParamsDB.__table__.create(
+#             db.engine,
+#             checkfirst=True
+#         )
 
-        return "paramsDB reset successfully"
+#         return "paramsDB reset successfully"
 
-    except Exception as e:
+#     except Exception as e:
 
-        return jsonify({
-            "error": str(e)
-        }), 500
+#         return jsonify({
+#             "error": str(e)
+#         }), 500
 
-@app.route("/rebuild-db")
-def rebuild_db():
+# @app.route("/rebuild-db")
+# def rebuild_db():
 
-    try:
+#     try:
 
-        #ParamsDB.__table__.drop(db.engine)
-        db.drop_all()
-        db.create_all()
+#         #ParamsDB.__table__.drop(db.engine)
+#         db.drop_all()
+#         db.create_all()
 
-        return "Database rebuilt successfully!"
+#         return "Database rebuilt successfully!"
 
-    except Exception as e:
+#     except Exception as e:
 
-        return str(e), 500
+#         return str(e), 500
 
 @app.route("/fix-weather-data")
 def fix_weather_data():
