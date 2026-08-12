@@ -37,6 +37,12 @@ class ParamsDB(db.Model):
     uploadInterval = db.Column(db.Integer, nullable=False)
     sensitivity = db.Column(db.Integer, nullable=False)
 
+    minTemp = db.Column(db.Float, nullable=False, default=10.0)
+
+    maxTemp = db.Column(db.Float, nullable=False, default=35.0)
+
+    remoteMode = db.Column(db.String(20), nullable=False, default="auto")
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
@@ -51,6 +57,8 @@ class WeatherData(db.Model):
     temperature = db.Column(db.Float, nullable=False)
     humidity = db.Column(db.Float, nullable=False)
     location = db.Column(db.Integer, nullable=False)
+    open = db.Column(db.Boolean, nullable=False, default=False)
+    mode = db.Column(db.String(20), nullable=False, default="auto")
 
     created_at = db.Column(
         db.DateTime,
@@ -88,23 +96,78 @@ def init_db():
     db.create_all()
     return "Database initialized!"
 
-# @app.route("/rebuild-db")
-# def rebuild_db():
+@app.route("/reset-params-db")
+def reset_params_db():
 
-#     try:
+    try:
 
-#         #ParamsDB.__table__.drop(db.engine)
-#         db.drop_all()
-#         db.create_all()
+        ParamsDB.__table__.drop(
+            db.engine,
+            checkfirst=True
+        )
 
-#         return "Database rebuilt successfully!"
+        ParamsDB.__table__.create(
+            db.engine,
+            checkfirst=True
+        )
 
-#     except Exception as e:
+        return "paramsDB reset successfully"
 
-#         return str(e), 500
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+@app.route("/rebuild-db")
+def rebuild_db():
+
+    try:
+
+        #ParamsDB.__table__.drop(db.engine)
+        db.drop_all()
+        db.create_all()
+
+        return "Database rebuilt successfully!"
+
+    except Exception as e:
+
+        return str(e), 500
 
 
 # Receive sensor data
+# @app.route("/data", methods=["POST"])
+# def receive_data():
+
+#     data = request.get_json()
+
+#     if not data:
+#         return jsonify({"error": "No JSON received"}), 400
+
+#     temperature = data.get("temperature")
+#     humidity = data.get("humidity")
+#     location = data.get("location")
+
+#     if temperature is None or humidity is None or location is None:
+#         return jsonify({"error": "Missing required fields"}), 400
+
+#     try:
+
+#         new_entry = WeatherData(
+#             temperature=temperature,
+#             humidity=humidity,
+#             location=location
+#         )
+
+#         db.session.add(new_entry)
+#         db.session.commit()
+
+#         return jsonify({"status": "success"}), 200
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+
 @app.route("/data", methods=["POST"])
 def receive_data():
 
@@ -116,8 +179,10 @@ def receive_data():
     temperature = data.get("temperature")
     humidity = data.get("humidity")
     location = data.get("location")
+    open = data.get("open")
+    mode = data.get("mode")
 
-    if temperature is None or humidity is None or location is None:
+    if temperature is None or humidity is None or location is None or open is None or mode is None:
         return jsonify({"error": "Missing required fields"}), 400
 
     try:
@@ -125,7 +190,9 @@ def receive_data():
         new_entry = WeatherData(
             temperature=temperature,
             humidity=humidity,
-            location=location
+            location=location,
+            open=open,
+            mode=mode
         )
 
         db.session.add(new_entry)
@@ -212,6 +279,8 @@ def get_data():
                 "temperature": entry.temperature,
                 "humidity": entry.humidity,
                 "location": entry.location,
+                "open": entry.open,
+                "mode": entry.mode,
                 "created_at": entry.created_at.strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
@@ -223,7 +292,7 @@ def get_data():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/params", methods=["POST"])
+@app.route("/params/data", methods=["POST"])
 def set_params():
 
     try:
@@ -238,6 +307,9 @@ def set_params():
         targetTemp = data.get("targetTemp")
         uploadInterval = data.get("uploadInterval")
         sensitivity = data.get("sensitivity")
+        minTemp = data.get("minTemp")
+        maxTemp = data.get("maxTemp")
+        remoteMode = data.get("remoteMode")
         
 
 
@@ -254,6 +326,9 @@ def set_params():
             params.targetTemp = targetTemp
             params.uploadInterval = uploadInterval
             params.sensitivity = sensitivity
+            params.minTemp = minTemp
+            params.maxTemp = maxTemp
+            params.remoteMode = remoteMode
 
         else:
 
@@ -262,7 +337,10 @@ def set_params():
                 targetHumid=targetHumid,
                 targetTemp=targetTemp,
                 uploadInterval=uploadInterval,
-                sensitivity=sensitivity
+                sensitivity=sensitivity,
+                minTemp=minTemp,
+                maxTemp=maxTemp,
+                remoteMode=remoteMode
             )
 
             db.session.add(params)
@@ -275,7 +353,7 @@ def set_params():
 
         return jsonify({"error": str(e)}), 500
 
-@app.route("/params", methods=["GET"])
+@app.route("/params/data", methods=["GET"])
 def get_params():
 
     try:
@@ -295,6 +373,9 @@ def get_params():
             "targetTemp": params.targetTemp,
             "uploadInterval": params.uploadInterval,
             "sensitivity": params.sensitivity,
+            "minTemp": params.minTemp,
+            "maxTemp": params.maxTemp,
+            "remoteMode": params.remoteMode,
             "created_at": params.created_at.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
@@ -305,7 +386,375 @@ def get_params():
 
         return jsonify({"error": str(e)}), 500
 
+@app.route("/params", methods=["POST"])
+def set_params():
 
+    try:
+
+        data = request.get_json()
+
+        if not data:
+
+            return jsonify({
+                "error": "No JSON received"
+            }), 400
+
+        targetVPD = data.get("targetVPD")
+        targetHumid = data.get("targetHumid")
+        targetTemp = data.get("targetTemp")
+        uploadInterval = data.get("uploadInterval")
+        sensitivity = data.get("sensitivity")
+
+        minTemp = data.get("minTemp")
+        maxTemp = data.get("maxTemp")
+
+        remoteMode = data.get("remoteMode")
+
+        if (
+            targetVPD is None or
+            targetHumid is None or
+            targetTemp is None or
+            uploadInterval is None or
+            sensitivity is None or
+            minTemp is None or
+            maxTemp is None or
+            remoteMode is None
+        ):
+
+            return jsonify({
+                "error": "Missing required fields"
+            }), 400
+
+        if remoteMode not in [
+            "auto",
+            "open",
+            "closed"
+        ]:
+
+            return jsonify({
+                "error":
+                "remoteMode must be auto, open, or closed"
+            }), 400
+
+        params = ParamsDB.query.first()
+
+        if params:
+
+            params.targetVPD = targetVPD
+            params.targetHumid = targetHumid
+            params.targetTemp = targetTemp
+            params.uploadInterval = uploadInterval
+            params.sensitivity = sensitivity
+
+            params.minTemp = minTemp
+            params.maxTemp = maxTemp
+
+            params.remoteMode = remoteMode
+
+        else:
+
+            params = ParamsDB(
+
+                targetVPD=targetVPD,
+                targetHumid=targetHumid,
+                targetTemp=targetTemp,
+
+                uploadInterval=uploadInterval,
+
+                sensitivity=sensitivity,
+
+                minTemp=minTemp,
+                maxTemp=maxTemp,
+
+                remoteMode=remoteMode
+
+            )
+
+            db.session.add(params)
+
+        db.session.commit()
+
+        return jsonify({
+            "status": "success"
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+@app.route("/params", methods=["GET"])
+def params_page():
+
+    params = ParamsDB.query.first()
+
+    if not params:
+
+        params = ParamsDB(
+
+            targetVPD=1.0,
+            targetHumid=60.0,
+            targetTemp=25.0,
+
+            uploadInterval=30,
+
+            sensitivity=1.0,
+
+            minTemp=15.0,
+            maxTemp=30.0,
+
+            remoteMode="auto"
+
+        )
+
+        db.session.add(params)
+        db.session.commit()
+
+    return render_template_string("""
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Weather Station Controls</title>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<style>
+
+body {
+
+    font-family: Arial;
+    margin: 30px;
+    max-width: 700px;
+
+}
+
+h1 {
+
+    margin-bottom: 30px;
+
+}
+
+.section {
+
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+
+}
+
+label {
+
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+
+}
+
+input, select {
+
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 10px;
+
+    margin-top: 5px;
+
+    font-size: 16px;
+
+}
+
+button {
+
+    width: 100%;
+
+    padding: 15px;
+
+    margin-top: 25px;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+}
+
+.mode-button {
+
+    padding: 15px;
+    margin-top: 10px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Weather Station Controls</h1>
+
+<form method="POST"
+      action="/params">
+
+<div class="section">
+
+<h2>Automatic Control</h2>
+
+<label>
+Target Temperature (°C)
+</label>
+
+<input
+    type="number"
+    step="0.1"
+    name="targetTemp"
+    value="{{ params.targetTemp }}"
+>
+
+<label>
+Temperature Sensitivity (°C)
+</label>
+
+<input
+    type="number"
+    step="0.1"
+    name="sensitivity"
+    value="{{ params.sensitivity }}"
+>
+
+<label>
+Target Humidity (%)
+</label>
+
+<input
+    type="number"
+    step="0.1"
+    name="targetHumid"
+    value="{{ params.targetHumid }}"
+>
+
+<label>
+Target VPD (kPa)
+</label>
+
+<input
+    type="number"
+    step="0.01"
+    name="targetVPD"
+    value="{{ params.targetVPD }}"
+>
+
+</div>
+
+
+<div class="section">
+
+<h2>Temperature Safety Limits</h2>
+
+<label>
+Minimum Temperature (°C)
+</label>
+
+<input
+    type="number"
+    step="0.1"
+    name="minTemp"
+    value="{{ params.minTemp }}"
+>
+
+<label>
+Maximum Temperature (°C)
+</label>
+
+<input
+    type="number"
+    step="0.1"
+    name="maxTemp"
+    value="{{ params.maxTemp }}"
+>
+
+</div>
+
+
+<div class="section">
+
+<h2>ESP32 Upload</h2>
+
+<label>
+Sensor Upload Interval (seconds)
+</label>
+
+<input
+    type="number"
+    step="1"
+    name="uploadInterval"
+    value="{{ params.uploadInterval }}"
+>
+
+</div>
+
+
+<div class="section">
+
+<h2>Remote Control</h2>
+
+<label>
+Control Mode
+</label>
+
+<select name="remoteMode">
+
+<option
+    value="auto"
+    {% if params.remoteMode == "auto" %}
+    selected
+    {% endif %}
+>
+    Automatic
+</option>
+
+<option
+    value="open"
+    {% if params.remoteMode == "open" %}
+    selected
+    {% endif %}
+>
+    Force Open
+</option>
+
+<option
+    value="closed"
+    {% if params.remoteMode == "closed" %}
+    selected
+    {% endif %}
+>
+    Force Closed
+</option>
+
+</select>
+
+</div>
+
+
+<button type="submit">
+Save Parameters
+</button>
+
+</form>
+
+</body>
+
+</html>
+
+""", params=params)
 
 @app.route("/graph")
 def graph():
